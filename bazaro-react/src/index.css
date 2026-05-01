@@ -1,0 +1,23 @@
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #fff;
+  color: #111;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Template-like spacing utilities used by dashboard */
+.pt-80 {
+  padding-top: 80px;
+}
+
+.pb-120 {
+  padding-bottom: 120px;
+}
