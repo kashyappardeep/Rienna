@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Level extends Model
+class Royalty extends Model
 {
     protected $fillable = [
-        'level',
-        'percentage',
+
+        'R1',
+        'R2',
+        'R3',
     ];
 }

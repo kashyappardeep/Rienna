@@ -25,6 +25,7 @@ class User extends Authenticatable
         'sponsor_id',
         'referral_code',
         'password',
+        'status',
     ];
 
     /**

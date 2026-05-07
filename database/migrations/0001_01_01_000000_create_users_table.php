@@ -26,6 +26,8 @@ return new class extends Migration
 
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // 👇 USER STATUS 0= Inactive, 1= Active , 2= Blocked,3= R1,4= R2, 5=R5
+            $table->tinyInteger('status')->default(0);
             $table->rememberToken();
             $table->timestamps();
 

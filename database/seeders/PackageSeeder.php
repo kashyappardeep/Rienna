@@ -17,23 +17,23 @@ class PackageSeeder extends Seeder
 
             [
                 'name' => 'Starter',
-                'image' => 'starter.png',
-                'amount' => 250,
-                'percentage' => 5,
+                'image' => 'p1.webp',
+                'amount' => 5,
+                'percentage' => 50,
             ],
 
             [
                 'name' => 'Silver',
-                'image' => 'silver.png',
-                'amount' => 500,
-                'percentage' => 7,
+                'image' => 'p2.webp',
+                'amount' => 5,
+                'percentage' => 50,
             ],
 
             [
                 'name' => 'Gold',
-                'image' => 'gold.png',
-                'amount' => 1000,
-                'percentage' => 10,
+                'image' => 'p3.webp',
+                'amount' => 5,
+                'percentage' => 50,
             ],
 
         ]);

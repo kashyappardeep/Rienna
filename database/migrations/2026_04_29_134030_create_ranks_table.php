@@ -15,7 +15,7 @@ return new class extends Migration
         $table->id();
         $table->string('name'); // Gold, Platinum etc
         $table->decimal('total_business', 20, 2);
-        $table->decimal('reward', 20, 2);
+        $table->string('reward')->nullable();
         $table->timestamps();
     });
     }
