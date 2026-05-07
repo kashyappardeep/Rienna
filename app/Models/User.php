@@ -49,4 +49,21 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function profile()
+{
+    return $this->hasOne(UserProfile::class);
+}
+public function earning()
+{
+    return $this->hasOne(UserEarning::class);
+}
+public function packageHistories()
+{
+    return $this->hasMany(PackageHistory::class);
+}
+public function transactions()
+{
+    return $this->hasMany(TransactionHistory::class);
+}
 }
