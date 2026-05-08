@@ -19,6 +19,52 @@ use App\Models\Admin;
 
 class PackageController extends Controller
 {
+
+    public function index()
+    {
+        // ======================
+        // 📦 PACKAGES
+        // ======================
+        $packages = Package::orderBy('id', 'asc')->get();
+
+        // ======================
+        // 📊 LEVEL INCOME
+        // ======================
+        $levels = LevelIncome::orderBy('level', 'asc')->get();
+
+        // ======================
+        // 🏆 RANKS
+        // ======================
+        $ranks = Rank::orderBy('id', 'asc')->get();
+
+        // ======================
+        // 💰 ROYALTY (single row)
+        // ======================
+        $royalty = Royalty::first();
+
+        return response()->json([
+
+            'status' => true,
+
+            'message' => 'All data fetched successfully',
+
+            'data' => [
+
+                // 📦 Packages
+                'packages' => $packages,
+
+                // 📊 Level income
+                'level_income' => $levels,
+
+                // 🏆 Ranks
+                'ranks' => $ranks,
+
+                // 💰 Royalty
+                'royalty' => $royalty,
+            ]
+        ]);
+    }
+
     public function buyPackage(Request $request)
     {   
          DB::beginTransaction();

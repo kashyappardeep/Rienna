@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\HistoryController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/packages', [PackageController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
 

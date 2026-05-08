@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 
 class HistoryController extends Controller
 {
+    
    public function userHistory()
 {
     $user = Auth::user();
