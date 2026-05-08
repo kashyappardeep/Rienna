@@ -15,6 +15,7 @@ class UserEarning extends Model
         'royalty_income',
         'reward_income',
         'team_business',
+        'available_withdrawal',
         'total_withdrawal',
 
         'rienna_wallet',

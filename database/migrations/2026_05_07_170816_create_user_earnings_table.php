@@ -20,6 +20,7 @@ return new class extends Migration
             // 💰 Earnings
             $table->decimal('total_earning', 20, 2)->default(0);
             $table->decimal('team_business', 20, 2)->default(0);
+            $table->decimal('available_withdrawal', 20, 2)->default(0);
 
             $table->decimal('level_income', 20, 2)->default(0);
             $table->decimal('royalty_income', 20, 2)->default(0);

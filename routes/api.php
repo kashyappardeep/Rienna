@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\Admin\LevelController;
 use App\Http\Controllers\Api\Admin\RankController;
 
@@ -8,6 +9,11 @@ use App\Http\Controllers\Api\Admin\RankController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/buy-package', [PackageController::class, 'buyPackage']);
+
+});
 // LEVEL ROUTES
 Route::prefix('admin/levels')->group(function () {
     Route::get('/', [LevelController::class, 'index']);
