@@ -16,6 +16,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // HISTORY ROUTES
     Route::get('/user/history', [HistoryController::class, 'userHistory']);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::post('/payments/inr/create-order', [PaymentController::class, 'createInrOrder']);
+    Route::post('/payments/inr/verify', [PaymentController::class, 'verifyInrPayment']);
+    Route::post('/payments/usdt/create-intent', [PaymentController::class, 'createUsdtIntent']);
+    Route::post('/payments/usdt/check-intent', [PaymentController::class, 'checkUsdtIntentStatus']);
 });
 // LEVEL ROUTES
 Route::prefix('admin/levels')->group(function () {

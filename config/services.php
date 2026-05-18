@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'usdt_testnet' => [
+        'rpc_url' => env('USDT_TESTNET_RPC_URL'),
+        'token_contract' => env('USDT_TESTNET_TOKEN_CONTRACT'),
+        'token_decimals' => env('USDT_TESTNET_TOKEN_DECIMALS', 18),
+        'lookback_blocks' => env('USDT_TESTNET_LOOKBACK_BLOCKS', 10000),
+        'address' => env('USDT_TESTNET_ADDRESS'),
+        'network' => env('USDT_TESTNET_NETWORK', 'BSC-TESTNET'),
+        'usd_to_usdt' => env('USDT_TESTNET_USD_TO_USDT', 1),
+    ],
+
 ];

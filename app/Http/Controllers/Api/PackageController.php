@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Royalty;
 use App\Models\Admin;
+use App\Models\UserAddress;
 
 class PackageController extends Controller
 {
@@ -73,7 +74,9 @@ class PackageController extends Controller
             $request->validate([
                 'package_id' => 'required',
                 'type'       => 'required', // 1=INR 2=USDT 3=ANB
-                'tx_hash'    => 'nullable'
+                'tx_hash'    => 'nullable',
+                'pincode'    => 'required',
+                'address'    => 'required',
             ]);
 
             // ==================================================
@@ -205,6 +208,15 @@ class PackageController extends Controller
                 'amount'     => $amount,
                 'type'       => $request->type,
                 'tx_hash'    => $request->tx_hash,
+            ]);
+
+            
+            UserAddress::create([
+
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'pincode'       => $request->pincode,
+                'address'    => $request->address,
             ]);
 
             // ==================================================
