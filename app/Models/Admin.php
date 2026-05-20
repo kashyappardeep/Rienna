@@ -2,20 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Admin extends Model
+class Admin extends Authenticatable
 {
-     protected $fillable = [
+    use HasApiTokens;
+
+    protected $fillable = [
 
         'email',
         'password',
-
         'total_earning',
         'total_withdrawal',
         'remaining_amount',
     ];
-     protected $hidden = [
+
+    protected $hidden = [
         'password',
+        'remember_token',
     ];
 }

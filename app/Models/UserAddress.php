@@ -12,5 +12,19 @@ class UserAddress extends Model
     'package_id',
     'address',
     'pincode',
+    'status',
+
 ];
+
+ // 👤 USER
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // 📦 PACKAGE
+    public function package()
+    {
+        return $this->belongsTo(Package::class);
+    }
 }

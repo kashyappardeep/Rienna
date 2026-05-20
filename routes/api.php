@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\Admin\LevelController;
 use App\Http\Controllers\Api\Admin\RankController;
 use App\Http\Controllers\Api\HistoryController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\Admin\AdminAuthController;
+use App\Http\Controllers\Api\Admin\AdminDashboardController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -51,4 +53,10 @@ Route::middleware('auth:admin')->group(function () {
 
         return $request->user();
     });
+    Route::get('/admin/package-history', [AdminDashboardController::class, 'packageHistory']);
+
+    Route::post(
+        '/admin/update-address-status',
+        [AdminDashboardController::class, 'updateAddressStatus']
+    );
 });

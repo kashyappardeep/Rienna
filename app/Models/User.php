@@ -62,6 +62,10 @@ public function earning()
 {
     return $this->hasOne(UserEarning::class);
 }
+public function addresses()
+{
+    return $this->hasMany(UserAddress::class);
+}
 public function packageHistories()
 {
     return $this->hasMany(PackageHistory::class);

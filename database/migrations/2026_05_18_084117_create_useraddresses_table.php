@@ -20,7 +20,7 @@ return new class extends Migration
         $table->string('pincode', 10);
 
         $table->timestamps();
-
+        $table->tinyInteger('status')->default(1);
         // Foreign keys (optional but recommended)
         $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         $table->foreign('package_id')->references('id')->on('packages')->onDelete('cascade');

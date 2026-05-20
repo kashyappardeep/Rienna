@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Admin;
 
+
 class AdminAuthController extends Controller
 {
     public function login(Request $request)
@@ -20,7 +21,7 @@ class AdminAuthController extends Controller
                 'password' => 'required',
             ]);
 
-            dd($request->all());
+            // dd($request->all());
 
             // ✅ FIND ADMIN
             $admin = Admin::where('email', $request->email)->first();

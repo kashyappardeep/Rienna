@@ -8,6 +8,10 @@ use App\Models\Rank;
 use App\Models\LevelIncome;
 use App\Models\UserEarning;
 use App\Models\PackageHistory;
+use App\Models\Package;
+use App\Models\Royalty;
+use App\Models\Admin;
+use App\Models\UserAddress;
 use App\Models\TransactionHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -77,8 +81,15 @@ class OrderController extends Controller
             'totals.total' => 'required|numeric|min:0',
             'totals.currency' => 'required|string|max:10',
             'items' => 'required|array|min:1',
+
+            'items.*.id' => 'required|string|max:100',
+
+            'items.*.productId' => 'required|integer',
+
             'items.*.name' => 'required|string|max:200',
+
             'items.*.quantity' => 'required|integer|min:1',
+
             'items.*.price' => 'required|numeric|min:0',
             'orderRef' => 'required|string|max:50',
             'paymentReference' => 'nullable|string|max:200',
@@ -106,12 +117,32 @@ class OrderController extends Controller
             'items' => $validated['items'],
             'created_at' => now()->toISOString(),
         ];
-
+        
+        $productId = $validated['items'][0]['productId'];
+        
+        
         array_unshift($existing, $record);
         $disk->put($path, json_encode($existing, JSON_PRETTY_PRINT));
 
+        $package = Package::find($productId);
+
+         if (!$package) {
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Package not found'
+                ], 404);
+            }
+
+        $amount = $package->amount;
+
+            $percentage = $package->percentage;
+
+            $user_invest_amount = ($amount * $percentage) / 100;
+
+        // dd($$validated['paymentMode']);
         // ✅ UPDATE USER EARNINGS (like buyPackage)
-        $totalAmount = $validated['totals']['total'];
+        $totalAmount = $user_invest_amount;
         $remaining3x = $totalAmount * 3;
 
         $earning = UserEarning::firstOrCreate([
@@ -128,112 +159,219 @@ class OrderController extends Controller
             $user->save();
         }
 
+        $admins = Admin::all();
+
+            foreach ($admins as $admin) {
+
+                $admin->total_earning += $user_invest_amount;
+
+                $admin->remaining_amount += $user_invest_amount;
+
+                $admin->save();
+            }
+
+           // =====================================
+            // ✅ ROYALTY DISTRIBUTION
+            // =====================================
+
+            // TOTAL 5%
+
+            $r1Amount = ($user_invest_amount * 2) / 100;
+
+            $r2Amount = ($user_invest_amount * 2) / 100;
+
+            $r3Amount = ($user_invest_amount * 1) / 100;
+
+            // FIRST ROW CREATE / GET
+            $royalty = Royalty::first();
+            
+            if (!$royalty) {
+
+                $royalty = Royalty::create([
+
+                    'R1' => 0,
+
+                    'R2' => 0,
+
+                    'R3' => 0,
+                ]);
+            }
+
+            // ADD AMOUNT
+            $royalty->R1 += $r1Amount;
+
+            $royalty->R2 += $r2Amount;
+
+            $royalty->R3 += $r3Amount;
+
+            $royalty->save();
+
+
         // ✅ CREATE PACKAGE HISTORY RECORD
         PackageHistory::create([
             'user_id'    => $user->id,
-            'package_id' => null, // null = Product Purchase (not a package)
+            'package_id' => $package->id, // null = Product Purchase (not a package)
             'amount'     => $totalAmount,
             'type'       => $this->getPaymentType($validated['paymentMode']),
             'tx_hash'    => $validated['paymentReference'] ?? null,
         ]);
 
-        // ==================================================
-        // ✅ LEVEL INCOME DISTRIBUTION (15 Levels)
-        // ==================================================
+         UserAddress::create([
 
-        $uplineId = $user->sponsor_id;
+            'user_id' => $user->id,
 
-        for ($i = 1; $i <= 15; $i++) {
+            'package_id' => $productId,
 
-            if (!$uplineId) {
-                break;
-            }
+            'pincode' => $validated['billingDetails']['pincode'],
 
-            $upline = User::find($uplineId);
+            'address' => $validated['billingDetails']['address'],
+        ]);
 
-            if (!$upline) {
-                break;
-            }
+         // ==================================================
+            // ✅ LEVEL INCOME DISTRIBUTION
+            // ==================================================
 
-            // ==========================================
-            // ✅ TEAM BUSINESS UPDATE
-            // ==========================================
-            $upEarning = UserEarning::firstOrCreate([
-                'user_id' => $upline->id
-            ]);
-            $upEarning->team_business += $totalAmount;
-            $upEarning->save();
+            $uplineId = $user->sponsor_id;
 
-            // ==========================================
-            // ✅ RANK CHECK
-            // ==========================================
-            $this->checkRank($upline);
-            $upline->save();
+            for ($i = 1; $i <= 15; $i++) {
 
-            // ==========================================
-            // ✅ ONLY ACTIVE USER GETS INCOME
-            // ==========================================
-            if ($upline->status != 0) {
-
-                $level = LevelIncome::where('level', $i)->first();
-
-                if ($level) {
-
-                    // LEVEL INCOME CALCULATION
-                    $income = ($totalAmount * $level->percentage) / 100;
-
-                    // GET/CREATE USER EARNING
-                    $upEarning = UserEarning::firstOrCreate([
-                        'user_id' => $upline->id
-                    ]);
-
-                    // CHECK REMAINING INCOME
-                    if ($upEarning->remaining_income <= 0) {
-                        $uplineId = $upline->sponsor_id;
-                        continue;
-                    }
-
-                    // IF INCOME > REMAINING
-                    if ($income > $upEarning->remaining_income) {
-                        $income = $upEarning->remaining_income;
-                    }
-
-                    // 80% USER, 20% RIENNA
-                    $incomeearned = ($income * 80) / 100;
-                    $riennaearn = ($income * 20) / 100;
-
-                    // UPDATE EARNING
-                    $upEarning->total_earning += $incomeearned;
-                    $upEarning->level_income += $incomeearned;
-                    $upEarning->rienna_wallet += $riennaearn;
-                    $upEarning->available_withdrawal += $incomeearned;
-                    $upEarning->remaining_income -= $income;
-
-                    // avoid negative
-                    if ($upEarning->remaining_income < 0) {
-                        $upEarning->remaining_income = 0;
-                    }
-
-                    $upEarning->save();
-
-                    // TRANSACTION HISTORY
-                    TransactionHistory::create([
-                        'user_id' => $upline->id,
-                        'from_id' => $user->id,
-                        'to_id'   => $upline->id,
-                        'level'   => $i,
-                        'amount'  => $income,
-                        'type'    => 1,
-                        'status'  => 1,
-                        'remark'  => 'Level Income (Product)',
-                    ]);
+                if (!$uplineId) {
+                    break;
                 }
+
+                $upline = User::find($uplineId);
+
+                if (!$upline) {
+                    break;
+                }
+
+                // ==========================================
+                // ✅ TEAM BUSINESS UPDATE
+                // ==========================================
+                $upEarning = UserEarning::firstOrCreate([
+                    'user_id' => $upline->id
+                ]);
+                $upEarning->team_business += $user_invest_amount;
+
+                $upEarning->save();
+
+                // ==========================================
+                // ✅ RANK CHECK
+                // ==========================================
+
+                $this->checkRank($upline);
+
+                $upline->save();
+
+                // ==========================================
+                // ✅ ONLY ACTIVE USER GETS INCOME
+                // status != 0
+                // ==========================================
+
+                if ($upline->status != 0) {
+
+                    $level = LevelIncome::where('level', $i)->first();
+
+                    if ($level) {
+
+                        // ======================================
+                        // ✅ LEVEL INCOME CALCULATION
+                        // ======================================
+
+                        $income = ($user_invest_amount * $level->percentage) / 100;
+
+                        // ======================================
+                        // ✅ USER EARNING
+                        // ======================================
+
+                        $upEarning = UserEarning::firstOrCreate([
+                            'user_id' => $upline->id
+                        ]);
+
+                        // ======================================
+                        // ✅ CHECK REMAINING INCOME
+                        // ======================================
+
+                        // if remaining income 0
+                        if ($upEarning->remaining_income <= 0) {
+
+                            $uplineId = $upline->sponsor_id;
+
+                            continue;
+                        }
+
+                        // ======================================
+                        // ✅ IF INCOME > REMAINING
+                        // ======================================
+
+                        if ($income > $upEarning->remaining_income) {
+
+                            $income = $upEarning->remaining_income;
+                        }
+
+                        // ======================================
+                        // ✅ 80% USER
+                        // ======================================
+
+                        $incomeearned = ($income * 80) / 100;
+
+                        // ======================================
+                        // ✅ 20% RIENNA
+                        // ======================================
+
+                        $riennaearn = ($income * 20) / 100;
+
+                        // ======================================
+                        // ✅ UPDATE EARNING
+                        // ======================================
+
+                        $upEarning->total_earning += $incomeearned;
+
+                        $upEarning->level_income += $incomeearned;
+
+                        $upEarning->rienna_wallet += $riennaearn;
+
+                        // ✅ withdrawal wallet
+                        $upEarning->available_withdrawal += $incomeearned;
+
+                        // ✅ minus remaining income
+                        $upEarning->remaining_income -= $income;
+
+                        // avoid negative
+                        if ($upEarning->remaining_income < 0) {
+                            $upEarning->remaining_income = 0;
+                        }
+
+                        $upEarning->save();
+
+                        // ======================================
+                        // ✅ TRANSACTION HISTORY
+                        // ======================================
+
+                        TransactionHistory::create([
+
+                            'user_id' => $upline->id,
+
+                            'from_id' => $user->id,
+
+                            'to_id'   => $upline->id,
+
+                            'level'   => $i,
+
+                            'amount'  => $income,
+
+                            'type'    => 1,
+
+                            'status'  => 1,
+
+                            'remark'  => 'Level Income',
+                        ]);
+                    }
+                }
+
+                // NEXT UPLINE
+                $uplineId = $upline->sponsor_id;
             }
-
-            // NEXT UPLINE
-            $uplineId = $upline->sponsor_id;
-        }
-
         DB::commit();
 
         return response()->json([

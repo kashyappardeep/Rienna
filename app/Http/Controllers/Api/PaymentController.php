@@ -110,6 +110,7 @@ class PaymentController extends Controller
         $validated = $request->validate([
             'usd_amount' => 'required|numeric|min:0.01',
             'network' => 'nullable|string|max:20',
+            'items' => 'nullable|array',
         ]);
 
         $network = strtoupper((string) ($validated['network'] ?? config('services.usdt_testnet.network', 'BSC-TESTNET')));
@@ -132,6 +133,7 @@ class PaymentController extends Controller
             'amount_usdt' => $usdtAmount,
             'created_at' => $createdAtTs,
             'status' => 'pending',
+            'items' => $validated['items'] ?? [],
         ];
         $this->writeUsdtIntents($intents);
 
