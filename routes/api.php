@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\Admin\LevelController;
 use App\Http\Controllers\Api\Admin\RankController;
 use App\Http\Controllers\Api\HistoryController;
+use App\Http\Controllers\Api\Admin\AdminAuthController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -37,4 +38,17 @@ Route::prefix('admin/ranks')->group(function () {
     Route::post('/store', [RankController::class, 'store']);
     Route::post('/update/{id}', [RankController::class, 'update']);
     Route::delete('/delete/{id}', [RankController::class, 'destroy']);
+});
+
+
+//Admin Login
+
+Route::post('/admin/login', [AdminAuthController::class, 'login']);
+
+Route::middleware('auth:admin')->group(function () {
+
+    Route::get('/admin/profile', function (Request $request) {
+
+        return $request->user();
+    });
 });
