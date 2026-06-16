@@ -98,6 +98,39 @@ class OrderController extends Controller
         DB::beginTransaction();
         try {
 
+          // ✅ VERIFY USDT/ANB PAYMENT INTENT
+        $blockchainTxHash = null;
+        $paymentMode = $validated['paymentMode'];
+        $intentId = $validated['paymentReference'] ?? null;
+        if (in_array($paymentMode, ['USDT', 'ANB'])) {
+            if (!$intentId) {
+                return response()->json(['status' => false, 'message' => 'Payment reference (intent ID) is required for USDT/ANB.'], 400);
+            }
+            $intentsDisk = Storage::disk('local');
+            $intentsPath = 'usdt_intents.json';
+            $intents = [];
+            if ($intentsDisk->exists($intentsPath)) {
+                $decoded = json_decode($intentsDisk->get($intentsPath), true);
+                if (is_array($decoded)) $intents = $decoded;
+            }
+            $intent = $intents[$intentId] ?? null;
+            if (!$intent) {
+                return response()->json(['status' => false, 'message' => 'Payment intent not found.'], 400);
+            }
+            if (($intent['status'] ?? '') !== 'paid') {
+                return response()->json(['status' => false, 'message' => 'Payment intent is not yet paid.'], 400);
+            }
+            $expectedAmount = (float) ($intent['amount_usdt'] ?? 0);
+            $orderTotal = (float) $validated['totals']['total'];
+            if (abs($expectedAmount - $orderTotal) > 0.01) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Payment amount mismatch. Expected \${$expectedAmount}, order total \${$orderTotal}."
+                ], 400);
+            }
+            $blockchainTxHash = $intent['tx_hash'] ?? null;
+        }
+
         $existing = [];
         $disk = Storage::disk('local');
         $path = 'orders.json';
@@ -108,10 +141,34 @@ class OrderController extends Controller
             }
         }
 
+        $txHashToStore = $blockchainTxHash ?? $intentId;
+
+        // ✅ CHECK DUPLICATE TX HASH
+        if ($txHashToStore) {
+            foreach ($existing as $order) {
+                if (($order['tx_hash'] ?? '') === $txHashToStore) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'This transaction hash has already been used for a previous order.'
+                    ], 400);
+                }
+            }
+            $existingPkg = PackageHistory::where('tx_hash', $txHashToStore)->exists();
+            if ($existingPkg) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This transaction hash has already been used for a previous purchase.'
+                ], 400);
+            }
+        }
+
         $record = [
             'id' => $validated['orderRef'],
-            'payment_mode' => $validated['paymentMode'],
-            'payment_reference' => $validated['paymentReference'] ?? null,
+            'payment_mode' => $paymentMode,
+            'payment_reference' => $intentId,
+            'tx_hash' => $txHashToStore,
             'billing_details' => $validated['billingDetails'],
             'totals' => $validated['totals'],
             'items' => $validated['items'],
@@ -211,9 +268,9 @@ class OrderController extends Controller
         PackageHistory::create([
             'user_id'    => $user->id,
             'package_id' => $package->id, // null = Product Purchase (not a package)
-            'amount'     => $totalAmount,
+            'amount'     => $amount,
             'type'       => $this->getPaymentType($validated['paymentMode']),
-            'tx_hash'    => $validated['paymentReference'] ?? null,
+            'tx_hash'    => $txHashToStore,
         ]);
 
          UserAddress::create([
